@@ -1,0 +1,22 @@
+packages:
+  "framer-motion": "Animations for page transitions and components"
+  "recharts": "Charts for A/B experiment dashboard"
+  "date-fns": "Date formatting for flights and alerts"
+  "clsx": "Class utility for dynamic styling"
+  "tailwind-merge": "Class merging for Tailwind"
+
+images:
+  - path: "artifacts/flight-platform/public/images/hero-bg.png"
+    description: "Minimalist abstract 3D clouds and sky in deep navy and bright sky blue, premium professional aesthetic, shallow depth of field"
+    aspect_ratio: "16:9"
+  - path: "artifacts/flight-platform/public/images/logo.png"
+    description: "Minimalist geometric airplane icon logo in sky blue on transparent background, sleek and modern"
+    aspect_ratio: "1:1"
+  - path: "artifacts/flight-platform/public/images/empty-state.png"
+    description: "Abstract soft illustration of an empty radar or map in sky blue and navy, soft UI, professional"
+    aspect_ratio: "1:1"
+
+notes:
+  - Auth token is stored in localStorage as 'flight_token'.
+  - API requests to protected routes will use this token in the Authorization header.
+  - Orval generated hooks from @workspace/api-client-react are used for all data fetching.
