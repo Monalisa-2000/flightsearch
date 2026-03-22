@@ -1,0 +1,941 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 1.0.0
+  description: Flight Search & Price Alert Platform API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: flights
+    description: Flight search operations
+  - name: alerts
+    description: Price alert operations
+  - name: recommendations
+    description: Travel recommendation operations
+  - name: experiments
+    description: A/B experimentation operations
+  - name: notifications
+    description: Notification operations
+  - name: worker
+    description: Background worker operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: registerUser
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: loginUser
+      tags: [auth]
+      summary: Login and get JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get current user profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /flights/search:
+    get:
+      operationId: searchFlights
+      tags: [flights]
+      summary: Search for flights
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+          example: DEL
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+          example: LON
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+          example: "2026-04-01"
+        - name: passengers
+          in: query
+          required: false
+          schema:
+            type: number
+            default: 1
+        - name: cabin
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [economy, business, first]
+            default: economy
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [cheapest, fastest, best]
+            default: best
+      responses:
+        "200":
+          description: Flight search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlightSearchResponse"
+        "400":
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /flights/airports:
+    get:
+      operationId: getAirports
+      tags: [flights]
+      summary: List airports for autocomplete
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of airports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Airport"
+
+  /alerts:
+    get:
+      operationId: getAlerts
+      tags: [alerts]
+      summary: Get user's price alerts
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of price alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PriceAlert"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createAlert
+      tags: [alerts]
+      summary: Create a price alert
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAlertRequest"
+      responses:
+        "201":
+          description: Alert created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceAlert"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /alerts/{id}:
+    get:
+      operationId: getAlert
+      tags: [alerts]
+      summary: Get a specific price alert
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Price alert
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceAlert"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteAlert
+      tags: [alerts]
+      summary: Delete a price alert
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "204":
+          description: Alert deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /recommendations:
+    get:
+      operationId: getRecommendations
+      tags: [recommendations]
+      summary: Get personalized travel recommendations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+            default: 6
+      responses:
+        "200":
+          description: Travel recommendations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecommendationsResponse"
+
+  /recommendations/trending:
+    get:
+      operationId: getTrendingDestinations
+      tags: [recommendations]
+      summary: Get trending destinations
+      responses:
+        "200":
+          description: Trending destinations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrendingDestination"
+
+  /experiments/assign:
+    post:
+      operationId: assignExperiment
+      tags: [experiments]
+      summary: Assign user to an experiment group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExperimentAssignRequest"
+      responses:
+        "200":
+          description: Experiment assignment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExperimentAssignment"
+
+  /experiments/track:
+    post:
+      operationId: trackExperimentEvent
+      tags: [experiments]
+      summary: Track experiment event (click, conversion)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrackEventRequest"
+      responses:
+        "200":
+          description: Event tracked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrackEventResponse"
+
+  /experiments/results:
+    get:
+      operationId: getExperimentResults
+      tags: [experiments]
+      summary: Get experiment results and metrics
+      parameters:
+        - name: experimentId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Experiment results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExperimentResults"
+
+  /notifications:
+    get:
+      operationId: getNotifications
+      tags: [notifications]
+      summary: Get user notifications
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+  /worker/status:
+    get:
+      operationId: getWorkerStatus
+      tags: [worker]
+      summary: Get price monitoring worker status
+      responses:
+        "200":
+          description: Worker status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkerStatus"
+
+  /worker/trigger:
+    post:
+      operationId: triggerWorker
+      tags: [worker]
+      summary: Manually trigger price monitoring worker run
+      responses:
+        "200":
+          description: Worker triggered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkerTriggerResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+        uptime:
+          type: number
+        timestamp:
+          type: string
+        services:
+          type: object
+          properties:
+            database:
+              type: string
+            cache:
+              type: string
+            worker:
+              type: string
+      required:
+        - status
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message
+
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        name:
+          type: string
+      required:
+        - email
+        - password
+        - name
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+      required:
+        - token
+        - user
+
+    User:
+      type: object
+      properties:
+        id:
+          type: number
+        email:
+          type: string
+        name:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - email
+        - name
+        - createdAt
+
+    Airport:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+      required:
+        - code
+        - name
+        - city
+        - country
+
+    Flight:
+      type: object
+      properties:
+        id:
+          type: string
+        airline:
+          type: string
+        airlineCode:
+          type: string
+        flightNumber:
+          type: string
+        from:
+          type: string
+        fromCity:
+          type: string
+        to:
+          type: string
+        toCity:
+          type: string
+        departureTime:
+          type: string
+        arrivalTime:
+          type: string
+        duration:
+          type: number
+        stops:
+          type: number
+        price:
+          type: number
+        currency:
+          type: string
+        cabin:
+          type: string
+        seatsLeft:
+          type: number
+        score:
+          type: number
+      required:
+        - id
+        - airline
+        - airlineCode
+        - flightNumber
+        - from
+        - fromCity
+        - to
+        - toCity
+        - departureTime
+        - arrivalTime
+        - duration
+        - stops
+        - price
+        - currency
+        - cabin
+        - seatsLeft
+        - score
+
+    FlightSearchResponse:
+      type: object
+      properties:
+        flights:
+          type: array
+          items:
+            $ref: "#/components/schemas/Flight"
+        meta:
+          type: object
+          properties:
+            total:
+              type: number
+            from:
+              type: string
+            to:
+              type: string
+            date:
+              type: string
+            sort:
+              type: string
+            cacheHit:
+              type: boolean
+            searchDurationMs:
+              type: number
+          required:
+            - total
+            - from
+            - to
+            - date
+            - sort
+            - cacheHit
+            - searchDurationMs
+      required:
+        - flights
+        - meta
+
+    CreateAlertRequest:
+      type: object
+      properties:
+        fromAirport:
+          type: string
+        toAirport:
+          type: string
+        targetPrice:
+          type: number
+        currency:
+          type: string
+          default: USD
+        expiresAt:
+          type: string
+      required:
+        - fromAirport
+        - toAirport
+        - targetPrice
+
+    PriceAlert:
+      type: object
+      properties:
+        id:
+          type: number
+        userId:
+          type: number
+        fromAirport:
+          type: string
+        toAirport:
+          type: string
+        targetPrice:
+          type: number
+        currency:
+          type: string
+        currentPrice:
+          type: number
+        status:
+          type: string
+          enum: [active, triggered, expired, paused]
+        triggeredAt:
+          type: string
+          nullable: true
+        expiresAt:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+        lastCheckedAt:
+          type: string
+          nullable: true
+      required:
+        - id
+        - userId
+        - fromAirport
+        - toAirport
+        - targetPrice
+        - currency
+        - currentPrice
+        - status
+        - createdAt
+
+    TrendingDestination:
+      type: object
+      properties:
+        code:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+        imageUrl:
+          type: string
+        avgPrice:
+          type: number
+        currency:
+          type: string
+        trendScore:
+          type: number
+        tags:
+          type: array
+          items:
+            type: string
+      required:
+        - code
+        - city
+        - country
+        - imageUrl
+        - avgPrice
+        - currency
+        - trendScore
+        - tags
+
+    Recommendation:
+      type: object
+      properties:
+        destination:
+          $ref: "#/components/schemas/TrendingDestination"
+        reason:
+          type: string
+        estimatedPrice:
+          type: number
+        bestMonthToVisit:
+          type: string
+      required:
+        - destination
+        - reason
+        - estimatedPrice
+        - bestMonthToVisit
+
+    RecommendationsResponse:
+      type: object
+      properties:
+        recommendations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Recommendation"
+        basedOn:
+          type: string
+      required:
+        - recommendations
+        - basedOn
+
+    ExperimentAssignRequest:
+      type: object
+      properties:
+        userId:
+          type: string
+        experimentId:
+          type: string
+      required:
+        - userId
+        - experimentId
+
+    ExperimentAssignment:
+      type: object
+      properties:
+        userId:
+          type: string
+        experimentId:
+          type: string
+        group:
+          type: string
+          enum: [control, treatment]
+        assignedAt:
+          type: string
+      required:
+        - userId
+        - experimentId
+        - group
+        - assignedAt
+
+    TrackEventRequest:
+      type: object
+      properties:
+        userId:
+          type: string
+        experimentId:
+          type: string
+        event:
+          type: string
+          enum: [click, conversion, impression]
+        metadata:
+          type: object
+          additionalProperties: true
+      required:
+        - userId
+        - experimentId
+        - event
+
+    TrackEventResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        eventId:
+          type: string
+      required:
+        - success
+        - eventId
+
+    ExperimentGroupMetrics:
+      type: object
+      properties:
+        group:
+          type: string
+        users:
+          type: number
+        impressions:
+          type: number
+        clicks:
+          type: number
+        conversions:
+          type: number
+        clickThroughRate:
+          type: number
+        conversionRate:
+          type: number
+      required:
+        - group
+        - users
+        - impressions
+        - clicks
+        - conversions
+        - clickThroughRate
+        - conversionRate
+
+    ExperimentResults:
+      type: object
+      properties:
+        experimentId:
+          type: string
+        control:
+          $ref: "#/components/schemas/ExperimentGroupMetrics"
+        treatment:
+          $ref: "#/components/schemas/ExperimentGroupMetrics"
+        winner:
+          type: string
+          nullable: true
+        confidence:
+          type: number
+      required:
+        - experimentId
+        - control
+        - treatment
+        - confidence
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: number
+        userId:
+          type: number
+        type:
+          type: string
+          enum: [price_drop, alert_triggered, recommendation]
+        title:
+          type: string
+        message:
+          type: string
+        read:
+          type: boolean
+        createdAt:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+      required:
+        - id
+        - userId
+        - type
+        - title
+        - message
+        - read
+        - createdAt
+
+    WorkerStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [running, idle, error]
+        lastRun:
+          type: string
+          nullable: true
+        nextRun:
+          type: string
+          nullable: true
+        alertsChecked:
+          type: number
+        alertsTriggered:
+          type: number
+        runCount:
+          type: number
+      required:
+        - status
+        - alertsChecked
+        - alertsTriggered
+        - runCount
+
+    WorkerTriggerResponse:
+      type: object
+      properties:
+        triggered:
+          type: boolean
+        message:
+          type: string
+        alertsChecked:
+          type: number
+        alertsTriggered:
+          type: number
+      required:
+        - triggered
+        - message
+        - alertsChecked
+        - alertsTriggered
