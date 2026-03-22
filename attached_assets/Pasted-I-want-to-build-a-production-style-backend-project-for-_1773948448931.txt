@@ -1,0 +1,272 @@
+I want to build a production-style backend project for a senior software engineer interview.
+The project should simulate a Flight Search and Price Alert Platform similar to Skyscanner.
+
+Design and implement a scalable backend architecture with the following requirements.
+
+Project Goal
+
+Build a Global Flight Search + Price Alert Platform that allows users to:
+
+Search flights between two cities
+
+Get ranked results (cheapest, fastest, best)
+
+Save price alerts
+
+Receive notifications when prices drop
+
+Get personalized travel recommendations
+
+The system should demonstrate distributed system design concepts suitable for an SDE-2 interview.
+
+Technical Stack
+
+Use the following stack:
+
+Frontend:
+
+Next.js
+
+React
+
+TypeScript
+
+Backend:
+
+Node.js (Express or NestJS)
+
+Database:
+
+PostgreSQL
+
+Caching:
+
+Redis
+
+Messaging:
+
+Kafka or RabbitMQ
+
+Background Workers:
+
+Node.js worker service
+
+Search:
+
+Elasticsearch (optional but preferred)
+
+Infrastructure:
+
+Docker
+
+Kubernetes (optional explanation)
+
+Monitoring:
+
+Prometheus + Grafana (conceptual)
+
+Authentication:
+
+JWT authentication
+
+System Components
+
+Design the following services.
+
+1. API Gateway
+
+Handles incoming requests.
+
+Responsibilities:
+
+authentication
+
+routing
+
+rate limiting
+
+request validation
+
+2. Flight Search Service
+
+Allows users to search flights.
+
+Example request:
+
+GET /flights/search?from=DEL&to=LON&date=2026-04-01
+
+Responsibilities:
+
+fetch flight data
+
+aggregate airline APIs
+
+rank results
+
+Ranking algorithm should support:
+
+cheapest
+
+fastest
+
+best value
+
+3. Cache Layer
+
+Use Redis for caching flight searches.
+
+Example key:
+
+DEL-LON-2026-04-01
+
+TTL:
+
+10 minutes
+
+Explain:
+
+cache invalidation
+
+cache hits vs misses
+
+4. Price Alert Service
+
+Users can create alerts.
+
+Example:
+
+Alert when price DEL → LON < $500
+
+API:
+
+POST /alerts
+
+Store alerts in database.
+
+5. Price Monitoring Worker
+
+Background workers run every few minutes.
+
+Flow:
+
+Worker
+   ↓
+Check active alerts
+   ↓
+Fetch latest flight prices
+   ↓
+Compare price
+   ↓
+Trigger notification
+
+Use message queues for job processing.
+
+6. Notification Service
+
+Send alerts through:
+
+email
+
+push notifications
+
+Use queue-based architecture.
+
+7. Recommendation Service
+
+Recommend travel destinations based on:
+
+user searches
+
+trending destinations
+
+seasonal trends
+
+Example endpoint:
+
+GET /recommendations
+8. A/B Experimentation System
+
+Implement a basic experimentation system.
+
+Example:
+
+Users randomly assigned:
+
+Group A → old ranking algorithm
+Group B → new ranking algorithm
+
+Track metrics:
+
+click-through rate
+
+booking conversion
+
+Architecture Requirements
+
+The system must demonstrate:
+
+microservices architecture
+
+stateless services
+
+horizontal scalability
+
+caching strategy
+
+event-driven architecture
+
+background processing
+
+failure handling
+
+retry mechanisms
+
+Include
+
+Provide:
+
+System architecture diagram
+
+API design
+
+Database schema
+
+Redis caching strategy
+
+Message queue architecture
+
+Example code for core services
+
+Docker setup
+
+Load scaling explanation
+
+Engineering Tradeoffs
+
+Explain decisions such as:
+
+Why Redis is used
+
+Why message queues are used
+
+How to scale to 1M searches per minute
+
+How to prevent API abuse
+
+How to handle failures in airline APIs
+
+Output
+
+Provide:
+
+folder structure
+
+service architecture
+
+code examples
+
+diagrams
+
+explanation of scalability
+
+This project should look like something a senior backend engineer would design for a travel platform like Skyscanner.
